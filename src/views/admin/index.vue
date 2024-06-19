@@ -1,7 +1,6 @@
 <template>
   <a-layout class="layout-demo">
     <a-layout-sider
-      theme="dark"
       breakpoint="lg"
       :width="220"
       collapsible
@@ -86,14 +85,14 @@
         </a-menu>
         <div class="action">
           <icon-home />
-          <icon-sun-fill />
-          <icon-moon-fill />
-          <icon-fullscreen-exit />
-          <icon-fullscreen />
+          <IconSunFill v-if="!isNightMode" @click="toggleDayNightMode" />
+          <IconMoonFill v-else @click="toggleDayNightMode" />
+          <IconFullscreenExit v-if="isFull" @click="toggleFullscreen" />
+          <IconFullscreen v-else @click="toggleFullscreen" />
           <icon-notification />
           <div class="user">
             <a-dropdown>
-              <a-avatar :style="{ backgroundColor: '#00d0b6' }":size="40">
+              <a-avatar :style="{ backgroundColor: '#00d0b6' }" :size="40">
                 Marcus
               </a-avatar>
               <template #content>
@@ -131,6 +130,30 @@ export default defineComponent({
     IconCalendar,
   },
   setup() {
+    const isNightMode = ref(false)
+    const toggleDayNightMode = () => {
+      isNightMode.value = !isNightMode.value
+      if (isNightMode.value === true) {
+        document.body.setAttribute('arco-theme', 'dark')
+      } else {
+        document.body.removeAttribute('arco-theme')
+      }
+      // 进行日/夜模式相关的逻辑处理
+      const mode = isNightMode.value ? '夜间模式' : '日间模式'
+      Message.info({
+        content: `切换到${mode}`,
+        duration: 2000,
+      })
+    }
+
+    const toggleFullscreen = () => {
+      fullScreen()
+      const action = isFull.value ? '进入全屏' : '退出全屏'
+      Message.info({
+        content: action,
+        duration: 2000,
+      })
+    }
     const collapsed = ref(false)
     const onCollapse = (val, type) => {
       const content = type === 'responsive' ? '触发响应式收缩' : '点击触发收缩'
@@ -140,12 +163,66 @@ export default defineComponent({
       })
       collapsed.value = val
     }
+
+    const isFull = ref(false)
+
+    function isFullScreen() {
+      return document.fullscreenElement == null
+    }
+
+    function exitFullScreen() {
+      let exitMethod =
+        document.cancelFullScreen ||
+        document.webkitCancelFullScreen ||
+        document.mozCancelFullScreen ||
+        document.exitFullScreen
+      if (exitMethod) {
+        exitMethod.call(document)
+      } else if (typeof window.ActiveXObject !== 'undefined') {
+        let wscript = new ActiveXObject('WScript.Shell')
+        if (wscript != null) {
+          wscript.SendKeys('{F11}')
+        }
+      }
+    }
+
+    // 全屏或取消全屏
+    function fullScreen() {
+      let element = document.documentElement
+      // 判断一下是否处于全屏
+      isFull.value = !isFull.value
+      if (!isFullScreen()) {
+        // 退出全屏
+        exitFullScreen()
+        return
+      }
+      // 全屏
+
+      let requestMethod =
+        element.requestFullScreen ||
+        element.webkitRequestFullScreen ||
+        element.mozRequestFullScreen ||
+        element.msRequestFullScreen
+      if (requestMethod) {
+        requestMethod.call(element)
+      } else if (typeof window.ActiveXObject !== 'undefined') {
+        //for Internet Explorer
+        let wscript = new ActiveXObject('WScript.Shell')
+        if (wscript !== null) {
+          wscript.SendKeys('{F11}')
+        }
+      }
+    }
     return {
       collapsed,
       onCollapse,
       onClickMenuItem(key) {
         Message.info({ content: `You select ${key}`, showIcon: true })
       },
+      isNightMode,
+      isFull,
+      toggleDayNightMode,
+      toggleFullscreen,
     }
   },
 })
@@ -153,7 +230,7 @@ export default defineComponent({
 <style scoped>
 .layout-demo {
   height: 100vh;
-  background: var(--color-fill-2);
+  background: var(--color-border-1);
 }
 .layout-demo :deep(.arco-layout-sider) .logo {
   height: 32px;
@@ -171,9 +248,11 @@ export default defineComponent({
   align-items: center;
   justify-content: space-between;
   .action {
+    background: var(--color-bg-2);
     margin-right: 24px;
     display: flex;
     align-items: center;
+    color: var(--color-text-1);
   }
   .action > *:not(:last-child) {
     margin-right: 24px;
