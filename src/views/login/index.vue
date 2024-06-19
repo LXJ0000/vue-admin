@@ -42,7 +42,7 @@ export default {
           password: form.password,
         })
         .then((resp) => {
-          Message.info('登陆成功')
+          Message.success('登陆成功')
           console.log(resp.data.message)
         })
         .catch((error) => {
